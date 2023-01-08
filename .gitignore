@@ -1,23 +1,33 @@
-# Binaries for programs and plugins
-*.exe
-*.dll
-*.so
-*.dylib
+name: Security Scans
 
-# Test binary, build with `go test -c`
-*.test
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
 
-# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
-.glide/
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-vendor/
+      - name: Run static analysis
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          security-checks: 'vuln,secret,config'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL'
 
-.idea/
-artifacts/
 
-coverage.out
-
-.DS_Store
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'code'
